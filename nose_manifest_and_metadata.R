@@ -25,7 +25,7 @@ sample_ids <- hmp_nose_metadata$sample_id
 filtered_manifest <- filter(hmp_manifest_3d5b44c0d5, sample_id %in% sample_ids)
 
 # This function extracts the file name from the url in the manifest file. This file is a gz compressed file.
-# GZ files are downloded using portal_clinet and should be extracted in a separate directory each preserving the original name of the gz file.
+# GZ files are downloaded using portal_clinet and should be extracted in a separate directory each preserving the original name of the gz file.
 get_file_name <- function(file_path_string){
   str_pieces <- strsplit(file_path_string, "/")[[1]]
   if (length(str_pieces) > 1) {
@@ -48,10 +48,11 @@ manifest_df <- data.frame(matrix(ncol = 2, nrow = 0))
 colnames(manifest_df) <- c("sample-id", "absolute-filepath")
 
 # Iterate over all the sample ids that will be imported to qiime2
-for(sample_number in seq(from = 1, to = length(sample_ids[1:10]), by = 1)) {
+for(sample_number in seq(from = 1, to = length(sample_ids), by = 1)) {
+  directory_name <- directories_names[sample_number]
   # If the sample id  is not already in the manifest file. This is because some samples have two or more fastaq files.
-  if (!sample_ids[sample_number] %in% manifest_df$`sample-id`) {
-    fastq_file_name <- list.files(paste("D:/hmp/hmp_nose/nasal_cavity/", directories_names[sample_number], sep = "/")) # Get the name of each sample's fastq file.
+  if (!sample_ids[sample_number] %in% manifest_df$`sample-id` && !grepl(pattern = "Private", x = directory_name, ignore.case = TRUE)) {
+    fastaq_file_name <- list.files(paste("D:/hmp/hmp_nose/nasal_cavity/", directory_name, sep = "/")) # Get the name of each sample's fastq file.
     absolute_file_path <- paste("/mnt/d/hmp/hmp_nose/nasal_cavity", directories_names[sample_number], fastaq_file_name, sep = "/") # get string with directory and fastaq file name for each sample.
     manifest_df[nrow(manifest_df) + 1,] = c(sample_ids[sample_number], absolute_file_path)
   }
@@ -59,9 +60,3 @@ for(sample_number in seq(from = 1, to = length(sample_ids[1:10]), by = 1)) {
 
 
 write.table(manifest_df, file = "D:/hmp/manifest_nasal_cavity_1st_visit.txt", sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
-
-
-get_file_name("https://downloads.hmpdacc.org/ihmp/t2d/genome/microbiome/16s/hm16str/HMP2_J34871_1_NS_T0_B0_0120_ZS2DMX7-01_AN77Y.clean.dehost.fastq.gz")
-
-# file_subpath <- paste(directories_names[sample_number], directory_name, sep = "/") 
-#absolute_file_path <- paste("/mnt/d/hmp/hmp_nose/nasal_cavity", file_subpath, sep = "/") # get string with directory and fastaq file name for each sample.
