@@ -71,3 +71,31 @@ read_qiime_otu_table2 <- function(table_path){
 otu_table <- read_qiime_otu_table2(otu_table_path)
 
 otu_table_ordered <- otu_table[order(rowSums(otu_table), decreasing = TRUE),]
+
+
+otu_table2 <- otu_table_ordered[,1:50]
+
+otu_table2 <- otu_table2 %>% dplyr::rename_all(make.names)
+
+otu_table2["bacteria"] <- row.names(otu_table_ordered)
+
+otu_g <- gather(otu_table2, X5a950f27980b5d93e4c16da1244ee6c4:d57eb430d669de8329be1769d4dd9678 , key = "sample", value = "counts")
+
+ggplot(otu_g, aes(x=sample, y=counts, fill=bacteria)) + 
+  geom_bar(position="stack", stat="identity")
+
+# Species co-occurrence analyses
+####################################################################################
+
+library(cooccur)
+
+# Transforming abundance data to presence/abscence
+otu_table_pa <- vegan::decostand(otu_table_ordered, method = "pa")
+
+# Infering co-ocurrences
+cooccur.otus <- cooccur(otu_table_pa,
+                        type = "spp_site",
+                        spp_names = TRUE)
+
+summary(cooccur.otus)
+plot(cooccur.otus)
