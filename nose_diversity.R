@@ -36,6 +36,36 @@ greengenes_parser_strain_level <- function(string){
   return(result_string)
 }
 
-otu_table <- read_qiime_otu_table(otu_table_path, level = "Strain")
+read_qiime_otu_table2 <- function(table_path){
+  if (!"readr" %in% installed.packages()) install.packages("readr")
+  if (!"collections" %in% installed.packages()) install.packages("collections")
+  if (!"dplyr" %in% installed.packages()) install.packages("dplyr")
+  if (!"tibble" %in% installed.packages()) install.packages("tibble")
+  
+  # read otu_table "as is"
+  otu_table <- readr::read_delim(table_path, skip = 1 ,delim = "\t")
+  
+  # getting a vector of parsed taxonomy
+  
+  tax_col <- apply(otu_table["taxonomy"], 1, greengenes_parser_strain_level)
+  
+  # renaming species in taxonomy.
+  # 
+  
+  # assigning taxonomy to column parsed_taxonomy
+  otu_table["taxonomy"] <- tax_col
+  
+  # moving tax column to the first column
+  otu_table <- cbind(otu_table[, ncol(otu_table)], otu_table[1:nrow(otu_table), 2:(ncol(otu_table)-2)])
+  # renaming tax to taxonomy. rename() is a dplyr function.
+  #otu_table <- dplyr::rename(otu_table, taxonomy = parsed_taxonomy)
+  # setting row names and dropping rownames column
+  # otu_table <- tibble::column_to_rownames(otu_table, var = "taxonomy")
+  return(otu_table)
+}
 
+otu_table <- read_qiime_otu_table2(otu_table_path)
 
+otu_table2 <- otu_table %>%
+  group_by(taxonomy) %>%
+  summarise_all(sum)
