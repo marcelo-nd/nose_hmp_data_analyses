@@ -56,16 +56,18 @@ read_qiime_otu_table2 <- function(table_path){
   otu_table["taxonomy"] <- tax_col
   
   # moving tax column to the first column
-  otu_table <- cbind(otu_table[, ncol(otu_table)], otu_table[1:nrow(otu_table), 2:(ncol(otu_table)-2)])
+  otu_table <- cbind(otu_table[, ncol(otu_table)], otu_table[1:nrow(otu_table), 2:(ncol(otu_table)-1)])
   # renaming tax to taxonomy. rename() is a dplyr function.
   #otu_table <- dplyr::rename(otu_table, taxonomy = parsed_taxonomy)
+  
+  otu_table <- otu_table %>%
+    group_by(taxonomy) %>%
+    summarise_all(sum)
   # setting row names and dropping rownames column
-  # otu_table <- tibble::column_to_rownames(otu_table, var = "taxonomy")
+  otu_table <- tibble::column_to_rownames(otu_table, var = "taxonomy")
   return(otu_table)
 }
 
 otu_table <- read_qiime_otu_table2(otu_table_path)
 
-otu_table2 <- otu_table %>%
-  group_by(taxonomy) %>%
-  summarise_all(sum)
+otu_table_ordered <- otu_table[order(rowSums(otu_table), decreasing = TRUE),]
