@@ -1,3 +1,7 @@
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+
 source("C:/Users/marce/Documents/Repos/microbiome-help/diversity_data_helper_functions.R")
 
 otu_table_path <- "D:/hmp/qiime_analysis/7_table.from_biom_w_taxonomy_strain_level.txt"
@@ -73,16 +77,48 @@ otu_table <- read_qiime_otu_table2(otu_table_path)
 otu_table_ordered <- otu_table[order(rowSums(otu_table), decreasing = TRUE),]
 
 
-otu_table2 <- otu_table_ordered[,1:50]
+otu_table2 <- otu_table_ordered[1:32,]
 
 otu_table2 <- otu_table2 %>% dplyr::rename_all(make.names)
 
-otu_table2["bacteria"] <- row.names(otu_table_ordered)
+row_names_df_to_remove<-c("k__Bacteria","Unassigned")
+otu_table2<- otu_table2[!(row.names(otu_table2) %in% row_names_df_to_remove),]
 
-otu_g <- gather(otu_table2, X5a950f27980b5d93e4c16da1244ee6c4:d57eb430d669de8329be1769d4dd9678 , key = "sample", value = "counts")
+otu_table2["bacteria"] <- row.names(otu_table2)
+
+otu_g <- gather(otu_table2, X5a950f27980b5d93e4c16da1244ee6c4:d57eb430d669de8329be1769d4e8d74a , key = "sample", value = "counts")
+
+cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442",
+                "#0072B2","brown1", "#CC79A7", "olivedrab3", "rosybrown",
+                "darkorange3", "blueviolet", "darkolivegreen4", "lightskyblue4", "navajowhite4",
+                "purple4", "springgreen4", "firebrick3", "gold3", "cyan3",
+                "plum", "mediumspringgreen", "blue", "red", "#053f73",
+                "#e3ae78", "#a23f3f", "#290f76", "#ce7e00", "#386857",
+                "#738564", "#e89d56", "	#cd541d", "#1a3a46", "#ffe599")
 
 ggplot(otu_g, aes(x=sample, y=counts, fill=bacteria)) + 
-  geom_bar(position="stack", stat="identity")
+  geom_bar(position="fill", stat="identity") +
+  scale_fill_manual(values=cbbPalette)
+
+
+####################################################################################
+
+otu_table3 <- otu_table_ordered
+
+otu_table3$Mean<- rowMeans(otu_table3)
+
+otu_table3 <- select(otu_table3, Mean)
+
+otu_table3["bacteria"] <- row.names(otu_table3)
+
+otu_table3["sample"] <- "mean"
+
+otu_table3<- otu_table3[!(row.names(otu_table3) %in% row_names_df_to_remove),]
+
+ggplot(otu_table3[1:30,], aes(x=sample, y=Mean, fill=bacteria)) + 
+  geom_bar(position="fill", stat="identity") +
+  scale_fill_manual(values=cbbPalette)
+
 
 # Species co-occurrence analyses
 ####################################################################################
