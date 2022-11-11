@@ -74,15 +74,19 @@ read_qiime_otu_table2 <- function(table_path){
 
 otu_table <- read_qiime_otu_table2(otu_table_path)
 
-otu_table_ordered <- otu_table[order(rowSums(otu_table), decreasing = TRUE),]
+otu_table_ordered_sums <- otu_table[order(rowSums(otu_table), decreasing = TRUE),]
 
-
-otu_table2 <- otu_table_ordered[1:32,]
-
-otu_table2 <- otu_table2 %>% dplyr::rename_all(make.names)
+otu_table_ordered_means <- otu_table[order(rowMeans(otu_table), decreasing = TRUE),]
 
 row_names_df_to_remove<-c("k__Bacteria","Unassigned")
-otu_table2<- otu_table2[!(row.names(otu_table2) %in% row_names_df_to_remove),]
+
+otu_table_ordered_means <- otu_table_ordered_means[!(row.names(otu_table_ordered_means) %in% row_names_df_to_remove),]
+
+otu_table_ordered_means <- otu_table_ordered_means %>% dplyr::rename_all(make.names)
+
+
+
+otu_table2 <- otu_table_ordered_means
 
 otu_table2["bacteria"] <- row.names(otu_table2)
 
@@ -94,16 +98,21 @@ cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442",
                 "purple4", "springgreen4", "firebrick3", "gold3", "cyan3",
                 "plum", "mediumspringgreen", "blue", "red", "#053f73",
                 "#e3ae78", "#a23f3f", "#290f76", "#ce7e00", "#386857",
-                "#738564", "#e89d56", "	#cd541d", "#1a3a46", "#ffe599")
+                "#738564", "#e89d56", "	#cd541d", "#1a3a46", "#ffe599",
+                "#583E26", "#A78B71", "#F7C815", "#EC9704", "#9C4A1A",
+                "#68904D", "#C8D2D1", "#14471E", "#EE9B01", "#DA6A00",
+                "#4B1E19", "#C0587E", "#FC8B5E", "#EA592A", "#FEF4C0")
 
 ggplot(otu_g, aes(x=sample, y=counts, fill=bacteria)) + 
-  geom_bar(position="fill", stat="identity") +
-  scale_fill_manual(values=cbbPalette)
+  geom_bar(position="fill", stat="identity")
 
+write.table(otu_table_ordered, "C:/Users/marce/Desktop/otu_table.csv", sep = ",", col.names = FALSE, quote = FALSE)
+
+write.table(otu_table_ordered, "C:/Users/marce/Desktop/otu_table_100.csv", sep = ",", col.names = FALSE, quote = FALSE)
 
 ####################################################################################
 
-otu_table3 <- otu_table_ordered
+otu_table3 <- otu_table_ordered_means
 
 otu_table3$Mean<- rowMeans(otu_table3)
 
@@ -115,10 +124,11 @@ otu_table3["sample"] <- "mean"
 
 otu_table3<- otu_table3[!(row.names(otu_table3) %in% row_names_df_to_remove),]
 
-ggplot(otu_table3[1:30,], aes(x=sample, y=Mean, fill=bacteria)) + 
-  geom_bar(position="fill", stat="identity") +
-  scale_fill_manual(values=cbbPalette)
+ggplot(otu_table3[1:50,], aes(x=sample, y=Mean, fill=bacteria)) + 
+  geom_bar(position="fill", stat="identity")
 
++
+  scale_fill_manual(values=cbbPalette)
 
 # Species co-occurrence analyses
 ####################################################################################
@@ -126,7 +136,7 @@ ggplot(otu_table3[1:30,], aes(x=sample, y=Mean, fill=bacteria)) +
 library(cooccur)
 
 # Transforming abundance data to presence/abscence
-otu_table_pa <- vegan::decostand(otu_table_ordered, method = "pa")
+otu_table_pa <- vegan::decostand(otu_table_ordered[1:100,], method = "pa")
 
 # Infering co-ocurrences
 cooccur.otus <- cooccur(otu_table_pa,
@@ -135,3 +145,45 @@ cooccur.otus <- cooccur(otu_table_pa,
 
 summary(cooccur.otus)
 plot(cooccur.otus)
+
+
+# Getting only the significant interactions
+co <- print(cooccur.otus)
+
+# Create a data frame of the nodes in the network. 
+nodes <- data.frame(id = 1:nrow(otu_table_pa),
+                    label = rownames(otu_table_pa),
+                    color = "#606482",
+                    shadow = TRUE) 
+
+# Create an edges dataframe from the significant pairwise co-occurrences.
+edges <- data.frame(from = co$sp1, to = co$sp2,
+                    color = ifelse(co$p_lt <= 0.05,
+                                   "#B0B2C1", "#3C3F51"),
+                    dashes = ifelse(co$p_lt <= 0.05, TRUE, FALSE))
+
+# Plotting network
+library(visNetwork)
+visNetwork(nodes = nodes, edges = edges) %>%
+  visIgraphLayout(layout = "layout_with_kk")
+
+write.csv(edges, "C:/Users/marce/Desktop/coocur_network.csv")
+
+library(igraph)
+
+g <- graph_from_data_frame(edges, directed=FALSE, vertices=nodes)
+print(g, e=TRUE, v=TRUE)
+plot(g)
+write.graph(g, "C:/Users/marce/Desktop/coocur_network.graphml", format = "graphml")
+
+####################################################################################
+
+row_names_df_to_remove<-c("k__Bacteria","Unassigned")
+otu_table_ordered_means<- otu_table_ordered_means[!(row.names(otu_table_ordered_means) %in% row_names_df_to_remove),]
+
+otu_table_100 <- otu_table_ordered_means[1:100,]
+
+otu_table_100 <- otu_table_100 %>% dplyr::rename_all(make.names)
+
+write.table(otu_table_100, "C:/Users/marce/Desktop/otu_table.csv", sep = ",", col.names = FALSE, quote = FALSE)
+
