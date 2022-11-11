@@ -86,7 +86,7 @@ otu_table_ordered_means <- otu_table_ordered_means %>% dplyr::rename_all(make.na
 
 
 
-otu_table2 <- otu_table_ordered_means
+otu_table2 <- otu_table_ordered_means[1:50,]
 
 otu_table2["bacteria"] <- row.names(otu_table2)
 
@@ -96,15 +96,16 @@ cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442",
                 "#0072B2","brown1", "#CC79A7", "olivedrab3", "rosybrown",
                 "darkorange3", "blueviolet", "darkolivegreen4", "lightskyblue4", "navajowhite4",
                 "purple4", "springgreen4", "firebrick3", "gold3", "cyan3",
-                "plum", "mediumspringgreen", "blue", "red", "#053f73",
+                "plum", "mediumspringgreen", "blue", "yellow", "#053f73",
                 "#e3ae78", "#a23f3f", "#290f76", "#ce7e00", "#386857",
-                "#738564", "#e89d56", "	#cd541d", "#1a3a46", "#ffe599",
+                "#738564", "#e89d56", "#cd541d", "#1a3a46", "#ffe599",
                 "#583E26", "#A78B71", "#F7C815", "#EC9704", "#9C4A1A",
-                "#68904D", "#C8D2D1", "#14471E", "#EE9B01", "#DA6A00",
+                "firebrick2", "#C8D2D1", "#14471E", "#EE9B01", "#DA6A00",
                 "#4B1E19", "#C0587E", "#FC8B5E", "#EA592A", "#FEF4C0")
 
 ggplot(otu_g, aes(x=sample, y=counts, fill=bacteria)) + 
-  geom_bar(position="fill", stat="identity")
+  geom_bar(position="fill", stat="identity") +
+  scale_fill_manual(values=cbbPalette)
 
 write.table(otu_table_ordered, "C:/Users/marce/Desktop/otu_table.csv", sep = ",", col.names = FALSE, quote = FALSE)
 
@@ -125,10 +126,10 @@ otu_table3["sample"] <- "mean"
 otu_table3<- otu_table3[!(row.names(otu_table3) %in% row_names_df_to_remove),]
 
 ggplot(otu_table3[1:50,], aes(x=sample, y=Mean, fill=bacteria)) + 
-  geom_bar(position="fill", stat="identity")
-
-+
+  geom_bar(position="fill", stat="identity") +
   scale_fill_manual(values=cbbPalette)
+
+
 
 # Species co-occurrence analyses
 ####################################################################################
@@ -187,3 +188,15 @@ otu_table_100 <- otu_table_100 %>% dplyr::rename_all(make.names)
 
 write.table(otu_table_100, "C:/Users/marce/Desktop/otu_table.csv", sep = ",", col.names = FALSE, quote = FALSE)
 
+####################################################################################
+
+#scaled by column
+otu_table_scaled <- scale(otu_table_ordered_means[1:30,])
+
+# Graph heatmap
+heatmap(otu_table_scaled, distfun = function(x) dist(x, method="euclidian"), hclustfun = function(x) hclust(x, method="ward.D"))
+
+
+row_scaled_df <- scale(t(otu_table_ordered_means[1:30,]))
+
+heatmap(row_scaled_df, distfun = function(x) dist(x, method="euclidian"), hclustfun = function(x) hclust(x, method="ward.D"))
