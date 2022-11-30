@@ -4,7 +4,11 @@ library(ggplot2)
 
 source("C:/Users/marce/Documents/Repos/microbiome-help/diversity_data_helper_functions.R")
 
-otu_table_path <- "D:/hmp/qiime_analysis/7_table.from_biom_w_taxonomy_strain_level.txt"
+# ASVs
+otu_table_path <- "/Users/marcelonavarrodiaz/Downloads/qiime_analises/qiime_analises_asv/3_resultados/7_table.from_biom_w_taxonomy_strain.txt"
+
+# OTUs
+otu_table_path <- "/Users/marcelonavarrodiaz/Downloads/qiime_analises/qiime_analises_otu/3_resultados/8_table.from_biom_w_taxonomy_strain_level.txt"
 
 greengenes_parser_strain_level <- function(string){
   result_string <- ""
@@ -72,25 +76,34 @@ read_qiime_otu_table2 <- function(table_path){
   return(otu_table)
 }
 
+
 otu_table <- read_qiime_otu_table2(otu_table_path)
 
-otu_table_ordered_sums <- otu_table[order(rowSums(otu_table), decreasing = TRUE),]
+#otu_table_ordered_sums <- otu_table[order(rowSums(otu_table), decreasing = TRUE),] 
 
+# Order table by larger to lower mean abundance of bacteria (rows)
 otu_table_ordered_means <- otu_table[order(rowMeans(otu_table), decreasing = TRUE),]
 
-row_names_df_to_remove<-c("k__Bacteria","Unassigned")
 
+# Remove unassigned counts
+row_names_df_to_remove<-c("k__Bacteria","Unassigned")
 otu_table_ordered_means <- otu_table_ordered_means[!(row.names(otu_table_ordered_means) %in% row_names_df_to_remove),]
 
+# Fix names of samples that do NOT beggin with a letter.
 otu_table_ordered_means <- otu_table_ordered_means %>% dplyr::rename_all(make.names)
 
 
+# Remove ASVs without NCBI refseq confident assignation.
+row_names_df_to_remove2<-c("Neisseriaceae sp","Streptophyta sp")
+otu_table_ordered_means <- otu_table_ordered_means[!(row.names(otu_table_ordered_means) %in% row_names_df_to_remove2),]
 
-otu_table2 <- otu_table_ordered_means[1:50,]
+# Select only the 30 more abundant species.
+otu_table2 <- otu_table_ordered_means[1:30,]
 
+# Generate a column with the names of ASVs/OTUs using rownames.
 otu_table2["bacteria"] <- row.names(otu_table2)
 
-otu_g <- gather(otu_table2, X5a950f27980b5d93e4c16da1244ee6c4:d57eb430d669de8329be1769d4e8d74a , key = "sample", value = "counts")
+otu_g <- gather(otu_table2, X5a950f27980b5d93e4c16da1244c9c15:d57eb430d669de8329be1769d4e8f962 , key = "sample", value = "counts")
 
 cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442",
                 "#0072B2","brown1", "#CC79A7", "olivedrab3", "rosybrown",
@@ -105,27 +118,34 @@ cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442",
 
 ggplot(otu_g, aes(x=sample, y=counts, fill=bacteria)) + 
   geom_bar(position="fill", stat="identity") +
-  scale_fill_manual(values=cbbPalette)
+  scale_fill_manual(values=cbbPalette) +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
 
 write.table(otu_table_ordered, "C:/Users/marce/Desktop/otu_table.csv", sep = ",", col.names = FALSE, quote = FALSE)
 
-write.table(otu_table_ordered, "C:/Users/marce/Desktop/otu_table_100.csv", sep = ",", col.names = FALSE, quote = FALSE)
+#write.table(otu_table_ordered, "C:/Users/marce/Desktop/otu_table_100.csv", sep = ",", col.names = FALSE, quote = FALSE)
 
 ####################################################################################
+# Graph of means for each ASV/OTU
 
 otu_table3 <- otu_table_ordered_means
 
+# Calculate means for each ASV/OTU
 otu_table3$Mean<- rowMeans(otu_table3)
 
+# Reduce table only to Means, discard all sample values
 otu_table3 <- select(otu_table3, Mean)
 
+# Generate a column with the names of ASVs/OTUs using rownames.
 otu_table3["bacteria"] <- row.names(otu_table3)
 
 otu_table3["sample"] <- "mean"
 
-otu_table3<- otu_table3[!(row.names(otu_table3) %in% row_names_df_to_remove),]
+#otu_table3<- otu_table3[!(row.names(otu_table3) %in% row_names_df_to_remove),]
 
-ggplot(otu_table3[1:50,], aes(x=sample, y=Mean, fill=bacteria)) + 
+ggplot(otu_table3[1:30,], aes(x=sample, y=Mean, fill=bacteria)) + 
   geom_bar(position="fill", stat="identity") +
   scale_fill_manual(values=cbbPalette)
 
@@ -137,7 +157,7 @@ ggplot(otu_table3[1:50,], aes(x=sample, y=Mean, fill=bacteria)) +
 library(cooccur)
 
 # Transforming abundance data to presence/abscence
-otu_table_pa <- vegan::decostand(otu_table_ordered[1:100,], method = "pa")
+otu_table_pa <- vegan::decostand(otu_table_ordered_means[1:30,], method = "pa")
 
 # Infering co-ocurrences
 cooccur.otus <- cooccur(otu_table_pa,
@@ -194,9 +214,14 @@ write.table(otu_table_100, "C:/Users/marce/Desktop/otu_table.csv", sep = ",", co
 otu_table_scaled <- scale(otu_table_ordered_means[1:30,])
 
 # Graph heatmap
-heatmap(otu_table_scaled, distfun = function(x) dist(x, method="euclidian"), hclustfun = function(x) hclust(x, method="ward.D"))
+heatmap(otu_table_scaled, distfun = function(x) dist(x, method="euclidian"), hclustfun = function(x) hclust(x, method="ward.D"), scale ="none")
+
+species_scaled_df <- scale(t(otu_table_ordered_means[1:30,]))
+heatmap(t(species_scaled_df), distfun = function(x) dist(x, method="euclidian"), hclustfun = function(x) hclust(x, method="ward.D"), scale ="none")
+
+heatmap(data.matrix(otu_table2), distfun = function(x) dist(x, method="euclidian"), hclustfun = function(x) hclust(x, method="ward.D"), scale = "column")
 
 
-row_scaled_df <- scale(t(otu_table_ordered_means[1:30,]))
 
-heatmap(row_scaled_df, distfun = function(x) dist(x, method="euclidian"), hclustfun = function(x) hclust(x, method="ward.D"))
+
+
