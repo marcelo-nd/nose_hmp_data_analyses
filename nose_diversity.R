@@ -2,14 +2,18 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 
-source("C:/Users/marce/Documents/Repos/microbiome-help/diversity_data_helper_functions.R")
+source("C:/Users/Marcelo/Documents/Github/microbiome-help/diversity_data_helper_functions.R")
 
 # ASVs
+# mac
 otu_table_path <- "/Users/marcelonavarrodiaz/Downloads/qiime_analises/qiime_analises_asv/3_resultados/7_table.from_biom_w_taxonomy_strain.txt"
+# windows
+otu_table_path <- "C:/Users/Marcelo/Desktop/HMP_nose_data_analysis/qiime_analises/qiime_analises_asv/3_resultados/7_table.from_biom_w_taxonomy_strain.txt"
 
 # OTUs
 otu_table_path <- "/Users/marcelonavarrodiaz/Downloads/qiime_analises/qiime_analises_otu/3_resultados/8_table.from_biom_w_taxonomy_strain_level.txt"
 
+# Helper functions
 greengenes_parser_strain_level <- function(string){
   result_string <- ""
   pieces <- strsplit(string, split  = ";")[[1]]
@@ -18,7 +22,7 @@ greengenes_parser_strain_level <- function(string){
   pieces_counter <- len_pieces
   # while result string is empty.
   while(nchar(result_string) == 0){
-    # if we arrived to the end of the categories and not reached taxonomy return the original string, e.g. "Undetermined". To make sure loop stops.
+    # if we arrived to the end of the categories and not reached taxonomy return the original string, e.g. "Undetermined" (to make sure loop stops).
     if(pieces_counter < 2){
       result_string <- string
     }else{
@@ -50,52 +54,48 @@ read_qiime_otu_table2 <- function(table_path){
   if (!"dplyr" %in% installed.packages()) install.packages("dplyr")
   if (!"tibble" %in% installed.packages()) install.packages("tibble")
   
-  # read otu_table "as is"
-  otu_table <- readr::read_delim(table_path, skip = 1 ,delim = "\t")
+  # Read otu_table "as is"
+  user_table <- readr::read_delim(table_path, skip = 1 ,delim = "\t")
   
-  # getting a vector of parsed taxonomy
+  # Getting a vector of parsed taxonomy
   
-  tax_col <- apply(otu_table["taxonomy"], 1, greengenes_parser_strain_level)
+  tax_col <- apply(user_table["taxonomy"], 1, greengenes_parser_strain_level)
+
+  # Assigning taxonomy to column taxonomy
+  user_table["taxonomy"] <- tax_col
   
-  # renaming species in taxonomy.
-  # 
+  # Moving tax column to the first column
+  user_table <- cbind(user_table[, ncol(user_table)], user_table[1:nrow(user_table), 2:(ncol(user_table)-1)])
   
-  # assigning taxonomy to column parsed_taxonomy
-  otu_table["taxonomy"] <- tax_col
-  
-  # moving tax column to the first column
-  otu_table <- cbind(otu_table[, ncol(otu_table)], otu_table[1:nrow(otu_table), 2:(ncol(otu_table)-1)])
-  # renaming tax to taxonomy. rename() is a dplyr function.
-  #otu_table <- dplyr::rename(otu_table, taxonomy = parsed_taxonomy)
-  
-  otu_table <- otu_table %>%
+  # Collapse all the ASVs with the same taxonomy assignation
+  user_table <- user_table %>%
     group_by(taxonomy) %>%
     summarise_all(sum)
-  # setting row names and dropping rownames column
-  otu_table <- tibble::column_to_rownames(otu_table, var = "taxonomy")
-  return(otu_table)
+  
+  # Setting row names and dropping rownames column
+  user_table <- tibble::column_to_rownames(user_table, var = "taxonomy")
+  return(user_table)
 }
 
-
+# Read table
 otu_table <- read_qiime_otu_table2(otu_table_path)
-
-#otu_table_ordered_sums <- otu_table[order(rowSums(otu_table), decreasing = TRUE),] 
 
 # Order table by larger to lower mean abundance of bacteria (rows)
 otu_table_ordered_means <- otu_table[order(rowMeans(otu_table), decreasing = TRUE),]
-
 
 # Remove unassigned counts
 row_names_df_to_remove<-c("k__Bacteria","Unassigned")
 otu_table_ordered_means <- otu_table_ordered_means[!(row.names(otu_table_ordered_means) %in% row_names_df_to_remove),]
 
-# Fix names of samples that do NOT beggin with a letter.
-otu_table_ordered_means <- otu_table_ordered_means %>% dplyr::rename_all(make.names)
-
-
 # Remove ASVs without NCBI refseq confident assignation.
 row_names_df_to_remove2<-c("Neisseriaceae sp","Streptophyta sp")
+
+row_names_df_to_remove2<-c("Neisseriaceae sp","Streptophyta sp", "Corynebacterium sp", "Streptococcus sp", "Bacilli sp", "Rothia mucilaginosa", "Staphylococcus epidermidis", "Anaerococcus sp", "Lachnospiraceae sp", "Actinomyces sp")
+
 otu_table_ordered_means <- otu_table_ordered_means[!(row.names(otu_table_ordered_means) %in% row_names_df_to_remove2),]
+
+# Fix names of samples that do NOT begin with a letter.
+otu_table_ordered_means <- otu_table_ordered_means %>% dplyr::rename_all(make.names)
 
 # Select only the 30 more abundant species.
 otu_table2 <- otu_table_ordered_means[1:30,]
@@ -220,8 +220,3 @@ species_scaled_df <- scale(t(otu_table_ordered_means[1:30,]))
 heatmap(t(species_scaled_df), distfun = function(x) dist(x, method="euclidian"), hclustfun = function(x) hclust(x, method="ward.D"), scale ="none")
 
 heatmap(data.matrix(otu_table2), distfun = function(x) dist(x, method="euclidian"), hclustfun = function(x) hclust(x, method="ward.D"), scale = "column")
-
-
-
-
-
