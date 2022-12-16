@@ -4,43 +4,24 @@ library(ggplot2)
 
 source("C:/Users/Marcelo/Documents/Github/microbiome-help/diversity_data_helper_functions.R")
 
+source("C:/Users/Marcelo/Documents/Github/microbiome-help/table_importers.R")
+
 setwd("C:/Users/Marcelo/Desktop/HMP_nose_data_analysis/qiime_analyses/qiime_analyses_asv")
 
 # ASVs
-otu_table_path <- "./3_resultados/7_table.from_biom_w_taxonomy_strain.txt"
+nose_biom_path <- "./3_resultados/6_table_w_tax_strain.biom"
 
-biom_path <- "./3_resultados/6_table_w_tax_strain.biom"
-
-load_test <- load_biom(biom_path, tax_rank = "Strain")
-load_test2 <- load_biom(biom_path, tax_rank = "Family")
-
-# Read table
-otu_table <- read_qiime_otu_table2(otu_table_path)
-
-# Order table by larger to lower mean abundance of bacteria (rows)
-otu_table_ordered_means <- otu_table[order(rowMeans(otu_table), decreasing = TRUE),]
-
-# Remove unassigned counts
-row_names_df_to_remove<-c("k__Bacteria","Unassigned")
-otu_table_ordered_means <- otu_table_ordered_means[!(row.names(otu_table_ordered_means) %in% row_names_df_to_remove),]
-
-# Remove ASVs without NCBI refseq confident assignation.
-row_names_df_to_remove2<-c("Neisseriaceae sp","Streptophyta sp")
-
-row_names_df_to_remove2<-c("Neisseriaceae sp","Streptophyta sp", "Corynebacterium sp", "Streptococcus sp", "Bacilli sp", "Rothia mucilaginosa", "Staphylococcus epidermidis", "Anaerococcus sp", "Lachnospiraceae sp", "Actinomyces sp")
-
-otu_table_ordered_means <- otu_table_ordered_means[!(row.names(otu_table_ordered_means) %in% row_names_df_to_remove2),]
-
-# Fix names of samples that do NOT begin with a letter.
-otu_table_ordered_means <- otu_table_ordered_means %>% dplyr::rename_all(make.names)
+asv_table_nose <- load_biom(biom_path = nose_biom_path, tax_rank = "Strain", order_table = TRUE)
 
 # Select only the 30 more abundant species.
-otu_table2 <- otu_table_ordered_means[1:30,]
+asv_table_nose30 <- asv_table_nose[1:30,]
 
 # Generate a column with the names of ASVs/OTUs using rownames.
-otu_table2["bacteria"] <- row.names(otu_table2)
 
-otu_g <- gather(otu_table2, X5a950f27980b5d93e4c16da1244c9c15:d57eb430d669de8329be1769d4e8f962 , key = "sample", value = "counts")
+asv_table_nose30_bar_plot <- asv_table_nose30
+asv_table_nose30_bar_plot["bacteria"] <- row.names(asv_table_nose30_bar_plot)
+
+asv_g <- gather(asv_table_nose30_bar_plot, X5a950f27980b5d93e4c16da1244c9c15:d57eb430d669de8329be1769d4e8f962 , key = "sample", value = "counts")
 
 cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442",
                 "#0072B2","brown1", "#CC79A7", "olivedrab3", "rosybrown",
@@ -53,40 +34,38 @@ cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442",
                 "firebrick2", "#C8D2D1", "#14471E", "#EE9B01", "#DA6A00",
                 "#4B1E19", "#C0587E", "#FC8B5E", "#EA592A", "#FEF4C0")
 
-ggplot(otu_g, aes(x=sample, y=counts, fill=bacteria)) + 
+ggplot(asv_g, aes(x=sample, y=counts, fill=bacteria)) + 
   geom_bar(position="fill", stat="identity") +
   scale_fill_manual(values=cbbPalette) +
   theme(axis.title.x=element_blank(),
         axis.text.x=element_blank(),
         axis.ticks.x=element_blank())
 
-write.table(otu_table_ordered, "C:/Users/marce/Desktop/otu_table.csv", sep = ",", col.names = FALSE, quote = FALSE)
+write.table(asv_table_nose, "./3_resultados/nose_asv_table.csv", sep = ",", col.names = FALSE, quote = FALSE)
 
-#write.table(otu_table_ordered, "C:/Users/marce/Desktop/otu_table_100.csv", sep = ",", col.names = FALSE, quote = FALSE)
+write.table(asv_table_nose30, "./3_resultados/nose_asv_table30.csv", sep = ",", col.names = FALSE, quote = FALSE)
 
 ####################################################################################
 # Graph of means for each ASV/OTU
 
-otu_table3 <- otu_table_ordered_means
+asv_table_nose2 <- asv_table_nose30
 
 # Calculate means for each ASV/OTU
-otu_table3$Mean<- rowMeans(otu_table3)
+asv_table_nose2$Mean<- rowMeans(asv_table_nose2)
 
 # Reduce table only to Means, discard all sample values
-otu_table3 <- select(otu_table3, Mean)
+asv_table_nose2 <- select(asv_table_nose2, Mean)
 
 # Generate a column with the names of ASVs/OTUs using rownames.
-otu_table3["bacteria"] <- row.names(otu_table3)
+asv_table_nose2["bacteria"] <- row.names(asv_table_nose2)
 
-otu_table3["sample"] <- "mean"
+asv_table_nose2["sample"] <- "mean"
 
 #otu_table3<- otu_table3[!(row.names(otu_table3) %in% row_names_df_to_remove),]
 
-ggplot(otu_table3[1:30,], aes(x=sample, y=Mean, fill=bacteria)) + 
+ggplot(asv_table_nose2, aes(x=sample, y=Mean, fill=bacteria)) + 
   geom_bar(position="fill", stat="identity") +
   scale_fill_manual(values=cbbPalette)
-
-
 
 # Species co-occurrence analyses
 ####################################################################################
@@ -94,7 +73,7 @@ ggplot(otu_table3[1:30,], aes(x=sample, y=Mean, fill=bacteria)) +
 library(cooccur)
 
 # Transforming abundance data to presence/abscence
-otu_table_pa <- vegan::decostand(otu_table_ordered_means[1:30,], method = "pa")
+otu_table_pa <- vegan::decostand(asv_table_nose30, method = "pa")
 
 # Infering co-ocurrences
 cooccur.otus <- cooccur(otu_table_pa,
@@ -125,8 +104,10 @@ library(visNetwork)
 visNetwork(nodes = nodes, edges = edges) %>%
   visIgraphLayout(layout = "layout_with_kk")
 
+# Export networka as edges list.
 write.csv(edges, "C:/Users/marce/Desktop/coocur_network.csv")
 
+# Export graph in "graphml" format
 library(igraph)
 
 g <- graph_from_data_frame(edges, directed=FALSE, vertices=nodes)
@@ -135,25 +116,80 @@ plot(g)
 write.graph(g, "C:/Users/marce/Desktop/coocur_network.graphml", format = "graphml")
 
 ####################################################################################
+# Heatmaps
 
-row_names_df_to_remove<-c("k__Bacteria","Unassigned")
-otu_table_ordered_means<- otu_table_ordered_means[!(row.names(otu_table_ordered_means) %in% row_names_df_to_remove),]
+col_fun = circlize::colorRamp2(c(-0.7, 2, 5.5), c("#5F8D4E", "white", "#FF6464"))
 
-otu_table_100 <- otu_table_ordered_means[1:100,]
+#scaled by colum (i.e. by sample).
+asv_table30_scaled_by_sample <- scale(asv_table_nose30, center = TRUE, scale = TRUE)
 
-otu_table_100 <- otu_table_100 %>% dplyr::rename_all(make.names)
+# Graph simple heatmap
+heatmap(asv_table30_scaled_by_sample, distfun = function(x) dist(x, method="euclidian"), hclustfun = function(x) hclust(x, method="ward.D"), scale ="none")#heatmap(data.matrix(asv_proportions), distfun = function(x) dist(x, method="euclidian"), hclustfun = function(x) hclust(x, method="ward.D"), scale ="none")
+#species_scaled_df <- scale(t(otu_table_ordered_means[1:30,]))
 
-write.table(otu_table_100, "C:/Users/marce/Desktop/otu_table.csv", sep = ",", col.names = FALSE, quote = FALSE)
+# complex heatmap
+htmp <- ComplexHeatmap::Heatmap(asv_table30_scaled_by_sample,
+                                #name = "Scaled ASV abundance",
+                                show_column_names = FALSE,
+                                col = col_fun,
+                                row_names_gp = gpar(fontsize = 8),
+                                heatmap_legend_param = list(
+                                  title = "Scaled abundance",
+                                  labels_rot = 0,
+                                  direction = "horizontal"
+                                ))
 
-####################################################################################
+ComplexHeatmap::draw(htmp, heatmap_legend_side="bottom")
 
-#scaled by column
-otu_table_scaled <- scale(otu_table_ordered_means[1:30,])
+##### Scaling by ASV
+asv_table30_scaled_by_asv <- t(scale(t(asv_table_nose30), center = TRUE, scale = TRUE))
 
-# Graph heatmap
-heatmap(otu_table_scaled, distfun = function(x) dist(x, method="euclidian"), hclustfun = function(x) hclust(x, method="ward.D"), scale ="none")
+col_fun = circlize::colorRamp2(c(-2, 2, 4), c("#5F8D4E", "white", "#FF6464"))
 
-species_scaled_df <- scale(t(otu_table_ordered_means[1:30,]))
-heatmap(t(species_scaled_df), distfun = function(x) dist(x, method="euclidian"), hclustfun = function(x) hclust(x, method="ward.D"), scale ="none")
+htmp_by_asv <- ComplexHeatmap::Heatmap(asv_table30_scaled_by_asv,
+                                #name = "Scaled ASV abundance",
+                                show_column_names = FALSE,
+                                col = col_fun,
+                                heatmap_legend_param = list(
+                                  title = "Scaled abundance",
+                                  labels_rot = 0,
+                                  direction = "horizontal"
+                                ))
+ComplexHeatmap::draw(htmp_by_asv, heatmap_legend_side="bottom")
 
-heatmap(data.matrix(otu_table2), distfun = function(x) dist(x, method="euclidian"), hclustfun = function(x) hclust(x, method="ward.D"), scale = "column")
+##### Normalization by sample
+
+min_max_norm <- function(x) {
+  (x - min(x)) / (max(x) - min(x))
+}
+
+# Apply Min-Max normalization
+asv_normalized <- as.data.frame(lapply(asv_table_nose30, min_max_norm), row.names =  row.names(asv_table_nose30))
+
+col_fun = circlize::colorRamp2(c(0, 0.5, 1), c("#5F8D4E", "white", "#FF6464"))
+htmp_norm <- ComplexHeatmap::Heatmap(as.matrix(asv_normalized),
+                                 #name = "Scaled ASV abundance",
+                                 show_column_names = FALSE,
+                                 col = col_fun,
+                                 heatmap_legend_param = list(
+                                   title = "Normalized abundance",
+                                   labels_rot = 0,
+                                   direction = "horizontal"
+                                 ))
+ComplexHeatmap::draw(htmp_norm, heatmap_legend_side="bottom")
+
+### Proportions heatmap
+
+asv_proportions <- t(t(asv_table_nose30)/rowSums(t(asv_table_nose30)))
+
+col_fun = circlize::colorRamp2(c(0, 0.5, 1), c("#5F8D4E", "white", "#FF6464"))
+htmp_prop <- ComplexHeatmap::Heatmap(as.matrix(asv_proportions),
+                                     #name = "Scaled ASV abundance",
+                                     show_column_names = FALSE,
+                                     col = col_fun,
+                                     heatmap_legend_param = list(
+                                       title = "Normalized abundance",
+                                       labels_rot = 0,
+                                       direction = "horizontal"
+                                     ))
+ComplexHeatmap::draw(htmp_prop, heatmap_legend_side="bottom")
