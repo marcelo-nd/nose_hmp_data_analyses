@@ -8,12 +8,12 @@ source("C:/Users/Marcelo/Documents/Github/microbiome-help/table_importers.R")
 
 source("C:/Users/Marcelo/Documents/Github/microbiome-help/graphs.R")
 
-setwd("C:/Users/Marcelo/Desktop/HMP_nose_data_analysis/qiime_analyses/qiime_analyses_asv")
+setwd("C:/Users/Marcelo/OneDrive - UT Cloud/Postdoc Tü/Sci/NoseSynComProject/HMP_nose_data_analysis/qiime_analyses/qiime_analyses_asv")
 
 # ASVs
 nose_biom_path <- "./3_resultados/6_table_w_tax_strain.biom"
 
-asv_table_nose <- load_biom(biom_path = nose_biom_path, tax_rank = "Strain", order_table = TRUE)
+asv_table_nose <- load_biom_as_table(biom_path = nose_biom_path, tax_rank = "Strain", strain_taxonomy = TRUE, order_table = TRUE)
 
 # Select only the 30 more abundant species.
 asv_table_nose30 <- asv_table_nose[1:30,]
@@ -41,7 +41,6 @@ barplot_from_feature_table(asv_table_nose2)
 
 # Species co-occurrence analyses
 ####################################################################################
-
 library(cooccur)
 
 # Transforming abundance data to presence/abscence
