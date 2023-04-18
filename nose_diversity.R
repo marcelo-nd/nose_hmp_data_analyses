@@ -2,18 +2,29 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 
-source("C:/Users/Marcelo/Documents/Github/microbiome-help/diversity_data_helper_functions.R")
+# mac
+setwd("/Users/marcelonavarrodiaz/Library/CloudStorage/OneDrive-UTCloud/Postdoc Tü/Sci/NoseSynComProject/1_HMP_nose_data_analysis/qiime_analyses/qiime_analyses_asv")
 
-source("C:/Users/Marcelo/Documents/Github/microbiome-help/table_importers.R")
+github_path <- "/Users/marcelonavarrodiaz/Documents/GitHub/"
 
-source("C:/Users/Marcelo/Documents/Github/microbiome-help/graphs.R")
-
+# windows
 setwd("C:/Users/Marcelo/Desktop/HMP_nose_data_analysis/qiime_analyses/qiime_analyses_asv")
+
+github_path <- "C:/Users/Marcelo/Documents/Github/"
+
+
+source(paste0(github_path, "microbiome-help/diversity_data_helper_functions.R"))
+
+source(paste0(github_path, "microbiome-help/table_importers.R"))
+
+source(paste0(github_path, "microbiome-help/graphs.R"))
+
+
 
 # ASVs
 nose_biom_path <- "./3_resultados/6_table_w_tax_strain.biom"
 
-asv_table_nose <- load_biom(biom_path = nose_biom_path, tax_rank = "Strain", order_table = TRUE)
+asv_table_nose <- load_biom_as_table(biom_path = nose_biom_path, strain_taxonomy = TRUE, order_table = TRUE)
 
 # Select only the 30 more abundant species.
 asv_table_nose30 <- asv_table_nose[1:30,]
@@ -164,3 +175,32 @@ htmp_prop <- ComplexHeatmap::Heatmap(as.matrix(asv_proportions),
                                        direction = "horizontal"
                                      ))
 ComplexHeatmap::draw(htmp_prop, heatmap_legend_side="bottom")
+
+
+#### Communities without S. aureus
+
+BiocManager::install("ComplexHeatmap")
+
+asv_no_aureus <- asv_table_nose30[, asv_table_nose30["Staphylococcus_aureus",]==0]
+
+# Transforming abundance data to presence/abscence
+table_no_aureus_pa <- vegan::decostand(asv_no_aureus, method = "pa")
+
+
+m1 = ComplexHeatmap::make_comb_mat(table_no_aureus_pa[,1:10])
+
+m1 = ComplexHeatmap::make_comb_mat(t(table_no_aureus_pa))
+
+ComplexHeatmap::UpSet(m1)
+
+
+asv_aureus <- asv_table_nose30[, asv_table_nose30["Staphylococcus_aureus",]>0]
+
+table_aureus_pa <- vegan::decostand(asv_aureus, method = "pa")
+
+m2 = ComplexHeatmap::make_comb_mat(table_no_aureus_pa[,1:10])
+
+m2 = ComplexHeatmap::make_comb_mat(t(table_aureus_pa))
+
+ComplexHeatmap::UpSet(m2)
+
