@@ -7,8 +7,7 @@ setwd("/Users/marcelonavarrodiaz/Library/CloudStorage/OneDrive-UTCloud/Postdoc T
 
 github_path <- "/Users/marcelonavarrodiaz/Documents/GitHub/"
 
-# windows
-setwd("C:/Users/Marcelo/Desktop/HMP_nose_data_analysis/qiime_analyses/qiime_analyses_asv")
+setwd("C:/Users/Marcelo/OneDrive - UT Cloud/Postdoc Tü/Sci/NoseSynComProject/HMP_nose_data_analysis/qiime_analyses/qiime_analyses_asv")
 
 github_path <- "C:/Users/Marcelo/Documents/Github/"
 
@@ -52,7 +51,6 @@ barplot_from_feature_table(asv_table_nose2)
 
 # Species co-occurrence analyses
 ####################################################################################
-
 library(cooccur)
 
 # Transforming abundance data to presence/abscence
