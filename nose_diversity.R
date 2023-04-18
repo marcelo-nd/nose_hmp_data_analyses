@@ -7,6 +7,8 @@ setwd("/Users/marcelonavarrodiaz/Library/CloudStorage/OneDrive-UTCloud/Postdoc T
 
 github_path <- "/Users/marcelonavarrodiaz/Documents/GitHub/"
 
+
+# Windows
 setwd("C:/Users/Marcelo/OneDrive - UT Cloud/Postdoc Tü/Sci/NoseSynComProject/HMP_nose_data_analysis/qiime_analyses/qiime_analyses_asv")
 
 github_path <- "C:/Users/Marcelo/Documents/Github/"
@@ -180,6 +182,8 @@ ComplexHeatmap::draw(htmp_prop, heatmap_legend_side="bottom")
 BiocManager::install("ComplexHeatmap")
 
 asv_no_aureus <- asv_table_nose30[, asv_table_nose30["Staphylococcus_aureus",]==0]
+
+asv_no_aureus <- asv_table_nose30[, asv_table_nose30["Staphylococcus_aureus",]<100]
 
 # Transforming abundance data to presence/abscence
 table_no_aureus_pa <- vegan::decostand(asv_no_aureus, method = "pa")
