@@ -9,7 +9,7 @@ github_path <- "/Users/marcelonavarrodiaz/Documents/GitHub/"
 
 
 # Windows
-setwd("C:/Users/Marcelo/OneDrive - UT Cloud/Postdoc Tü/Sci/NoseSynComProject/HMP_nose_data_analysis/qiime_analyses/qiime_analyses_asv")
+setwd("C:/Users/Marcelo/OneDrive - UT Cloud/Postdoc Tü/Sci/NoseSynComProject/1_HMP_nose_data_analysis/qiime_analyses/qiime_analyses_asv")
 
 github_path <- "C:/Users/Marcelo/Documents/Github/"
 
@@ -35,7 +35,7 @@ barplot_from_feature_table(feature_table = asv_table_nose30)
 
 write.table(asv_table_nose, "./3_resultados/nose_asv_table.csv", sep = ",", col.names = FALSE, quote = FALSE)
 
-write.table(asv_table_nose30, "./3_resultados/nose_asv_table30.csv", sep = ",", col.names = FALSE, quote = FALSE)
+write.table(asv_table_nose30, "./3_resultados/nose_asv_table30_2.csv", sep = ",", col.names = FALSE, quote = FALSE)
 
 ####################################################################################
 # Graph of means for each ASV/OTU
@@ -96,14 +96,14 @@ library(igraph)
 g <- graph_from_data_frame(edges, directed=FALSE, vertices=nodes)
 print(g, e=TRUE, v=TRUE)
 plot(g)
-write.graph(g, "C:/Users/marce/Desktop/coocur_network.graphml", format = "graphml")
+write.graph(g, "C:/Users/Marcelo/Desktop/coocur_network.graphml", format = "graphml")
 
 ####################################################################################
 # Heatmaps
 
-col_fun = circlize::colorRamp2(c(-2, 0, 2), c("#5F8D4E", "white", "#FF6464"))
+col_fun = circlize::colorRamp2(c(-0.7, 2, 5.5), c("#5F8D4E", "white", "#FF6464"))
 
-# Scaled by colum (i.e. by sample).
+# Scaled by columm (i.e. by sample).
 asv_table30_scaled_by_sample <- scale(asv_table_nose30, center = TRUE, scale = TRUE)
 
 # Graph simple heatmap
@@ -114,7 +114,7 @@ htmp <- ComplexHeatmap::Heatmap(asv_table30_scaled_by_sample,
                                 #name = "Scaled ASV abundance",
                                 show_column_names = FALSE,
                                 col = col_fun,
-                                row_names_gp = grid::gpar(fontsize = 10),
+                                row_names_gp = grid::gpar(fontsize = 8),
                                 heatmap_legend_param = list(
                                   title = "Scaled abundance",
                                   labels_rot = 0,
@@ -137,6 +137,7 @@ htmp_by_asv <- ComplexHeatmap::Heatmap(asv_table30_scaled_by_asv,
                                   labels_rot = 0,
                                   direction = "horizontal"
                                 ))
+
 ComplexHeatmap::draw(htmp_by_asv, heatmap_legend_side="bottom")
 
 ##### Normalization by sample
@@ -183,11 +184,12 @@ BiocManager::install("ComplexHeatmap")
 
 asv_no_aureus <- asv_table_nose30[, asv_table_nose30["Staphylococcus_aureus",]==0]
 
-asv_no_aureus <- asv_table_nose30[, asv_table_nose30["Staphylococcus_aureus",]<100]
+#asv_no_aureus <- asv_table_nose30[, asv_table_nose30["Staphylococcus_aureus",]<100]
 
 # Transforming abundance data to presence/abscence
 table_no_aureus_pa <- vegan::decostand(asv_no_aureus, method = "pa")
 
+m1 = ComplexHeatmap::make_comb_mat(table_no_aureus_pa[,1:10])
 
 m1 = ComplexHeatmap::make_comb_mat(t(table_no_aureus_pa))
 
@@ -198,7 +200,47 @@ asv_aureus <- asv_table_nose30[, asv_table_nose30["Staphylococcus_aureus",]>0]
 
 table_aureus_pa <- vegan::decostand(asv_aureus, method = "pa")
 
+m2 = ComplexHeatmap::make_comb_mat(table_no_aureus_pa[,1:10])
+
 m2 = ComplexHeatmap::make_comb_mat(t(table_aureus_pa))
 
 ComplexHeatmap::UpSet(m2)
+
+######################################################################################
+
+asv_no_aureus <- asv_table_nose30[, asv_table_nose30["Staphylococcus_aureus",]==0]
+
+asv_aureus <- asv_table_nose30[, asv_table_nose30["Staphylococcus_aureus",]>0]
+
+#col_fun = circlize::colorRamp2(c(-0.7, 2, 5.5), c("#5F8D4E", "white", "#FF6464"))
+
+col_fun = circlize::colorRamp2(c(-2, 0, 2), c("#5F8D4E", "white", "#FF6464"))
+
+# Scaled by column (i.e. by sample).
+asv_table30_scaled_by_sample <- scale(asv_table_nose30, center = TRUE, scale = TRUE)
+
+# Create annotation for heatmap using p/a of S. aureus.
+
+asv_aureus <- asv_table_nose30[, asv_table_nose30["Staphylococcus_aureus",]>0]
+
+asv_table_nose30[, asv_table_nose30["Staphylococcus_aureus",]>0]
+
+column_sa <- as.data.frame(t(asv_table_nose30["Staphylococcus_aureus",]>0))$Staphylococcus_aureus
+
+column_sa_anotation = ComplexHeatmap::HeatmapAnnotation(S_aureus = column_sa)
+
+# complex heatmap
+htmp <- ComplexHeatmap::Heatmap(asv_table30_scaled_by_sample,
+                                name = "Scaled ASV abundance",
+                                top_annotation = column_sa_anotation,
+                                show_column_names = FALSE,
+                                col = col_fun,
+                                row_names_gp = grid::gpar(fontsize = 8),
+                                heatmap_legend_param = list(
+                                  title = "Scaled abundance",
+                                  labels_rot = 0,
+                                  direction = "horizontal"
+                                ))
+
+ComplexHeatmap::draw(htmp, heatmap_legend_side="bottom")
 
