@@ -101,7 +101,7 @@ write.graph(g, "C:/Users/marce/Desktop/coocur_network.graphml", format = "graphm
 ####################################################################################
 # Heatmaps
 
-col_fun = circlize::colorRamp2(c(-0.7, 2, 5.5), c("#5F8D4E", "white", "#FF6464"))
+col_fun = circlize::colorRamp2(c(-2, 0, 2), c("#5F8D4E", "white", "#FF6464"))
 
 # Scaled by colum (i.e. by sample).
 asv_table30_scaled_by_sample <- scale(asv_table_nose30, center = TRUE, scale = TRUE)
@@ -114,7 +114,7 @@ htmp <- ComplexHeatmap::Heatmap(asv_table30_scaled_by_sample,
                                 #name = "Scaled ASV abundance",
                                 show_column_names = FALSE,
                                 col = col_fun,
-                                row_names_gp = grid::gpar(fontsize = 8),
+                                row_names_gp = grid::gpar(fontsize = 10),
                                 heatmap_legend_param = list(
                                   title = "Scaled abundance",
                                   labels_rot = 0,
@@ -189,8 +189,6 @@ asv_no_aureus <- asv_table_nose30[, asv_table_nose30["Staphylococcus_aureus",]<1
 table_no_aureus_pa <- vegan::decostand(asv_no_aureus, method = "pa")
 
 
-m1 = ComplexHeatmap::make_comb_mat(table_no_aureus_pa[,1:10])
-
 m1 = ComplexHeatmap::make_comb_mat(t(table_no_aureus_pa))
 
 ComplexHeatmap::UpSet(m1)
@@ -199,8 +197,6 @@ ComplexHeatmap::UpSet(m1)
 asv_aureus <- asv_table_nose30[, asv_table_nose30["Staphylococcus_aureus",]>0]
 
 table_aureus_pa <- vegan::decostand(asv_aureus, method = "pa")
-
-m2 = ComplexHeatmap::make_comb_mat(table_no_aureus_pa[,1:10])
 
 m2 = ComplexHeatmap::make_comb_mat(t(table_aureus_pa))
 
